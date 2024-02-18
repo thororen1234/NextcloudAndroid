@@ -372,11 +372,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
         accountSetupWebviewBinding.loginWebview.getSettings().setJavaScriptEnabled(true);
         accountSetupWebviewBinding.loginWebview.getSettings().setDomStorageEnabled(true);
 
-        if (useGenericUserAgent) {
-            accountSetupWebviewBinding.loginWebview.getSettings().setUserAgentString(MainApp.getUserAgent());
-        } else {
-            accountSetupWebviewBinding.loginWebview.getSettings().setUserAgentString(getWebLoginUserAgent());
-        }
+        accountSetupWebviewBinding.loginWebview.getSettings().setUserAgentString(MainApp.getUserAgent());
         accountSetupWebviewBinding.loginWebview.getSettings().setSaveFormData(false);
         accountSetupWebviewBinding.loginWebview.getSettings().setSavePassword(false);
 
