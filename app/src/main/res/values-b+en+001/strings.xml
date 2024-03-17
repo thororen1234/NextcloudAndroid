@@ -37,6 +37,23 @@
     <string name="allow_resharing">Allow resharing</string>
     <string name="app_widget_description">Shows one widget from dashboard</string>
     <string name="appbar_search_in">Search in %s</string>
+    <string name="assistant_screen_all_task_type">All</string>
+    <string name="assistant_screen_create_task_alert_dialog_input_field_placeholder">Type some text</string>
+    <string name="assistant_screen_delete_task_alert_dialog_description">Are you sure you want to delete this task?</string>
+    <string name="assistant_screen_delete_task_alert_dialog_title">Delete Task</string>
+    <string name="assistant_screen_loading">Task List are loading, please wait</string>
+    <string name="assistant_screen_no_task_available_for_all_task_filter_text">No task available. Select a task type to create a new task.</string>
+    <string name="assistant_screen_no_task_available_text">No task available for %s task type, you can create a new task from bottom right.</string>
+    <string name="assistant_screen_task_create_fail_message">An error occurred while creating the task</string>
+    <string name="assistant_screen_task_create_success_message">Task successfully created</string>
+    <string name="assistant_screen_task_delete_fail_message">Task successfully deleted</string>
+    <string name="assistant_screen_task_delete_success_message">An error occurred while deleting the task</string>
+    <string name="assistant_screen_task_list_error_state_message">Cannot able to fetch task list, please check your internet connection.</string>
+    <string name="assistant_screen_task_more_actions_bottom_sheet_delete_action">Delete Task</string>
+    <string name="assistant_screen_task_types_error_state_message">Cannot able to fetch task types, please check your internet connection.</string>
+    <string name="assistant_screen_task_view_show_less">Show less</string>
+    <string name="assistant_screen_task_view_show_more">Show more</string>
+    <string name="assistant_screen_top_bar_title">Assistant</string>
     <string name="associated_account_not_found">Associated account not found!</string>
     <string name="auth_access_failed">Access failed: %1$s</string>
     <string name="auth_account_does_not_exist">The account is not added on this device yet</string>
@@ -235,6 +252,7 @@
     <string name="drawer_header_background">Background image of drawer header</string>
     <string name="drawer_item_activities">Activities</string>
     <string name="drawer_item_all_files">All files</string>
+    <string name="drawer_item_assistant">Assistant</string>
     <string name="drawer_item_favorites">Favourites</string>
     <string name="drawer_item_gallery">Media</string>
     <string name="drawer_item_groupfolders">Groupfolders</string>
@@ -253,6 +271,7 @@
     <string name="drawer_synced_folders">Auto upload</string>
     <string name="e2e_not_yet_setup">E2E not yet setup</string>
     <string name="e2e_offline">Not possible without internet connection</string>
+    <string name="ecosystem_apps_display_assistant">Assistant</string>
     <string name="ecosystem_apps_display_more">More</string>
     <string name="ecosystem_apps_display_notes">Notes</string>
     <string name="ecosystem_apps_display_talk">Talk</string>
@@ -789,7 +808,7 @@
     <string name="storage_permission_full_access">Full access</string>
     <string name="storage_permission_media_read_only">Media read-only</string>
     <string name="storage_pictures">Pictures</string>
-    <string name="store_full_desc">The self-hosted productivity platform that keeps you in control.\n\nFeatures:\n* Easy, modern interface, suited to the theme of your server\n* Upload files to your Nextcloud server\n* Share them with others\n* Keep your favorite files and folders synced\n* Search across all folders on your server\n* Auto Upload for photos and videos taken by your device\n* Keep up to date with notifications\n* Multi-account support\n* Secure access to your data with fingerprint or PIN\n* Integration with DAVx5 (formerly known as DAVdroid) for easy setup of calendar and Ccontacts synchronization\n\nPlease report all issues at https://github.com/nextcloud/android/issues and discuss this app at https://help.nextcloud.com/c/clients/android\n\nNew to Nextcloud? Nextcloud is a private file sync and share and communication server. It is libre software, and you can host it yourself or pay a company to do it for you. That way, you are in control of your photos, your calendar and contact data, your documents and everything else.\n\nCheck out Nextcloud at https://nextcloud.com</string>
+    <string name="store_full_desc">The self-hosted productivity platform that keeps you in control.\n\nFeatures:\n* Easy, modern interface, suited to the theme of your server\n* Upload files to your Nextcloud server\n* Share them with others\n* Keep your favorite files and folders synced\n* Search across all folders on your server\n* Auto Upload for photos and videos taken by your device\n* Keep up to date with notifications\n* Multi-account support\n* Secure access to your data with fingerprint or PIN\n* Integration with DAVx5 (formerly known as DAVdroid) for easy setup of calendar and contacts synchronization\n\nPlease report all issues at https://github.com/nextcloud/android/issues and discuss this app at https://help.nextcloud.com/c/clients/android\n\nNew to Nextcloud? Nextcloud is a private file sync and share and communication server. It is libre software, and you can host it yourself or pay a company to do it for you. That way, you are in control of your photos, your calendar and contact data, your documents and everything else.\n\nCheck out Nextcloud at https://nextcloud.com</string>
     <string name="store_full_dev_desc">The self-hosted productivity platform that keeps you in control.\nThis is the official development version, featuring a daily sample of any new untested functionality, which may cause instability and data loss. The app is for users willing to test, and report bugs should they occur. Do not use it for your productive work!\n\nBoth the official dev and regular version are available on F-droid, and can be installed at the same time.</string>
     <string name="store_short_desc">The self-hosted productivity platform that keeps you in control</string>
     <string name="store_short_dev_desc">The self-hosted productivity platform that keeps you in control (dev preview version)</string>
@@ -861,8 +880,11 @@
     <string name="update_link_file_no_exist">Unable to update. Please check whether the file exists.</string>
     <string name="update_link_forbidden_permissions">to update this share</string>
     <string name="updating_share_failed">Updating share failed</string>
+    <string name="upload_action_cancelled_clear">Clear cancelled uploads</string>
+    <string name="upload_action_cancelled_resume">Resume cancelled uploads</string>
     <string name="upload_action_failed_clear">Clear failed uploads</string>
     <string name="upload_action_failed_retry">Retry failed uploads</string>
+    <string name="upload_action_file_not_exist_message">Some files not exists those files cannot be resumed</string>
     <string name="upload_action_global_upload_pause">Pause all uploads</string>
     <string name="upload_action_global_upload_resume">Resume all uploads</string>
     <string name="upload_cannot_create_file">Cannot create local file</string>
@@ -885,6 +907,7 @@
     <string name="upload_local_storage_full">Local storage full</string>
     <string name="upload_local_storage_not_copied">File could not be copied to local storage</string>
     <string name="upload_lock_failed">Locking folder failed</string>
+    <string name="upload_manually_cancelled">Upload was cancelled by user</string>
     <string name="upload_old_android">Encryption is only possible with &gt;= Android 5.0</string>
     <string name="upload_query_move_foreign_files">Insufficient space prevents copying the selected files into the %1$s folder. Would you like to move them there instead?</string>
     <string name="upload_quota_exceeded">Storage quota exceeded</string>
