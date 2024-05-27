@@ -32,6 +32,8 @@ data class CapabilityEntity(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = ProviderTableMeta._ID)
     val id: Int?,
+    @ColumnInfo(name = ProviderTableMeta.CAPABILITIES_ASSISTANT)
+    val assistant: Int?,
     @ColumnInfo(name = ProviderTableMeta.CAPABILITIES_ACCOUNT_NAME)
     val accountName: String?,
     @ColumnInfo(name = ProviderTableMeta.CAPABILITIES_VERSION_MAYOR)
@@ -98,6 +100,8 @@ data class CapabilityEntity(
     val endToEndEncryption: Int?,
     @ColumnInfo(name = ProviderTableMeta.CAPABILITIES_END_TO_END_ENCRYPTION_KEYS_EXIST)
     val endToEndEncryptionKeysExist: Int?,
+    @ColumnInfo(name = ProviderTableMeta.CAPABILITIES_END_TO_END_ENCRYPTION_API_VERSION)
+    val endToEndEncryptionApiVersion: String?,
     @ColumnInfo(name = ProviderTableMeta.CAPABILITIES_ACTIVITY)
     val activity: Int?,
     @ColumnInfo(name = ProviderTableMeta.CAPABILITIES_SERVER_BACKGROUND_DEFAULT)

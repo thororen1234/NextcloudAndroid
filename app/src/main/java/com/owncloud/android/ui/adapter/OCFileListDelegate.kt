@@ -32,6 +32,8 @@ import androidx.core.content.res.ResourcesCompat
 import com.elyeproj.loaderviewlibrary.LoaderImageView
 import com.nextcloud.android.common.ui.theme.utils.ColorRole
 import com.nextcloud.client.account.User
+import com.nextcloud.client.jobs.download.FileDownloadHelper
+import com.nextcloud.client.jobs.upload.FileUploadHelper
 import com.nextcloud.client.preferences.AppPreferences
 import com.nextcloud.utils.extensions.createRoundedOutline
 import com.owncloud.android.R
@@ -52,6 +54,7 @@ import com.owncloud.android.utils.theme.ViewThemeUtils
 
 @Suppress("LongParameterList", "TooManyFunctions")
 class OCFileListDelegate(
+    private val fileUploadHelper: FileUploadHelper,
     private val context: Context,
     private val ocFileListFragmentInterface: OCFileListFragmentInterface,
     private val user: User,
@@ -204,6 +207,7 @@ class OCFileListDelegate(
     fun bindGridViewHolder(
         gridViewHolder: ListGridImageViewHolder,
         file: OCFile,
+        currentDirectory: OCFile?,
         searchType: SearchType?
     ) {
         // thumbnail
@@ -249,8 +253,9 @@ class OCFileListDelegate(
                 file.isEncrypted ||
                 file.isEncrypted &&
                 !EncryptionUtils.supportsSecureFiledrop(file, user) ||
-                searchType == SearchType.FAVORITE_SEARCH
-            )
+                searchType == SearchType.FAVORITE_SEARCH ||
+                file.isFolder && currentDirectory?.isEncrypted ?: false
+            ) // sharing an encrypted subfolder is not possible
         if (shouldHideShare) {
             gridViewHolder.shared.visibility = View.GONE
         } else {
@@ -340,25 +345,32 @@ class OCFileListDelegate(
 
     private fun showLocalFileIndicator(file: OCFile, gridViewHolder: ListGridImageViewHolder) {
         val operationsServiceBinder = transferServiceGetter.operationsServiceBinder
-        val fileDownloaderBinder = transferServiceGetter.fileDownloaderBinder
-        val fileUploaderBinder = transferServiceGetter.fileUploaderBinder
-        when {
+
+        val icon: Int? = when {
             operationsServiceBinder?.isSynchronizing(user, file) == true ||
-                fileDownloaderBinder?.isDownloading(user, file) == true ||
-                fileUploaderBinder?.isUploading(user, file) == true -> {
+                FileDownloadHelper.instance().isDownloading(user, file) ||
+                fileUploadHelper.isUploading(user, file) -> {
                 // synchronizing, downloading or uploading
-                gridViewHolder.localFileIndicator.setImageResource(R.drawable.ic_synchronizing)
-                gridViewHolder.localFileIndicator.visibility = View.VISIBLE
+                R.drawable.ic_synchronizing
             }
+
             file.etagInConflict != null -> {
-                // conflict
-                gridViewHolder.localFileIndicator.setImageResource(R.drawable.ic_synchronizing_error)
-                gridViewHolder.localFileIndicator.visibility = View.VISIBLE
+                R.drawable.ic_synchronizing_error
             }
+
             file.isDown -> {
-                // downloaded
-                gridViewHolder.localFileIndicator.setImageResource(R.drawable.ic_synced)
-                gridViewHolder.localFileIndicator.visibility = View.VISIBLE
+                R.drawable.ic_synced
+            }
+
+            else -> {
+                null
+            }
+        }
+
+        gridViewHolder.localFileIndicator.run {
+            icon?.let {
+                setImageResource(icon)
+                visibility = View.VISIBLE
             }
         }
     }

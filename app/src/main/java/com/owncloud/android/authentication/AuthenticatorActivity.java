@@ -60,7 +60,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
-import android.text.Editable;
 import android.text.TextUtils;
 import android.util.AndroidRuntimeException;
 import android.view.KeyEvent;
@@ -215,7 +214,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
     private AccountManager mAccountMgr;
 
     /// Server PRE-Fragment elements
-    private AccountSetupBinding accountSetupBinding;
+    private AccountSetupBinding accountSetupBinding = null;
     private AccountSetupWebviewBinding accountSetupWebviewBinding;
 
     private String mServerStatusText = EMPTY_STRING;
@@ -377,6 +376,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
         viewThemeUtils.platform.colorCircularProgressBar(accountSetupWebviewBinding.loginWebviewProgressBar,
                 ColorRole.ON_PRIMARY_CONTAINER);
         accountSetupWebviewBinding.loginWebview.setVisibility(View.GONE);
+        new WebViewUtil(this).setProxyKKPlus(accountSetupWebviewBinding.loginWebview);
 
         accountSetupWebviewBinding.loginWebview.getSettings().setAllowFileAccess(false);
         accountSetupWebviewBinding.loginWebview.getSettings().setJavaScriptEnabled(true);
@@ -409,6 +409,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
             url = getResources().getString(R.string.webview_login_url);
         }
 
+        new WebViewUtil(this).setProxyKKPlus(accountSetupWebviewBinding.loginWebview);
         if (url.startsWith(HTTPS_PROTOCOL)) {
             strictMode = true;
         }
@@ -480,6 +481,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
                         }
                     }
 
+                    @Override
                     public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
                         accountSetupWebviewBinding.loginWebviewProgressBar.setVisibility(View.GONE);
                         accountSetupWebviewBinding.loginWebview.setVisibility(View.VISIBLE);
@@ -783,13 +785,14 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
         super.onDestroy();
     }
 
+    @SuppressFBWarnings("NP")
     private void checkOcServer() {
         String uri;
-        Editable hostUrlInput = accountSetupBinding.hostUrlInput.getText();
 
-        if (accountSetupBinding != null && hostUrlInput != null &&
-                !hostUrlInput.toString().isEmpty()) {
-            uri = hostUrlInput.toString().trim();
+        if (accountSetupBinding != null &&
+                accountSetupBinding.hostUrlInput.getText() != null &&
+                !accountSetupBinding.hostUrlInput.getText().toString().isEmpty()) {
+            uri = accountSetupBinding.hostUrlInput.getText().toString().trim();
         } else {
             uri = mServerInfo.mBaseUrl;
         }
@@ -875,7 +878,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
             if (operation.hashCode() == mWaitingForOpId) {
                 onGetServerInfoFinish(result);
             } // else nothing ; only the last check operation is considered;
-            // multiple can be started if the user amends a URL quickly
+              // multiple can be started if the user amends a URL quickly
 
         } else if (operation instanceof GetUserInfoRemoteOperation) {
             onGetUserNameFinish(result);

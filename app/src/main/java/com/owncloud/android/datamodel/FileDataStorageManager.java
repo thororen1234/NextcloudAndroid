@@ -58,6 +58,7 @@ import com.owncloud.android.lib.resources.shares.OCShare;
 import com.owncloud.android.lib.resources.shares.ShareType;
 import com.owncloud.android.lib.resources.shares.ShareeUser;
 import com.owncloud.android.lib.resources.status.CapabilityBooleanType;
+import com.owncloud.android.lib.resources.status.E2EVersion;
 import com.owncloud.android.lib.resources.status.OCCapability;
 import com.owncloud.android.operations.RemoteOperationFailedException;
 import com.owncloud.android.utils.FileStorageUtils;
@@ -180,6 +181,50 @@ public class FileDataStorageManager {
         return fileDao.getFileByEncryptedRemotePath(path, user.getAccountName()) != null;
     }
 
+    public long getTopParentId(OCFile file) {
+        if (file.getParentId() == 1) {
+            return file.getFileId();
+        }
+
+        return getTopParentIdRecursive(file);
+    }
+
+    private long getTopParentIdRecursive(OCFile file) {
+        if (file.getParentId() == 1) {
+            return file.getFileId();
+        }
+
+        OCFile parentFile = getFileById(file.getParentId());
+        if (parentFile != null) {
+            return getTopParentId(parentFile);
+        }
+
+        return file.getFileId();
+    }
+
+    public List<OCFile> getAllFilesRecursivelyInsideFolder(OCFile file) {
+        ArrayList<OCFile> result = new ArrayList<>();
+
+        if (file == null || !file.fileExists()) {
+            return result;
+        }
+
+        if (!file.isFolder()) {
+            result.add(file);
+            return result;
+        }
+
+        List<OCFile> filesInsideFolder = getFolderContent(file.getFileId(), false);
+        for (OCFile item: filesInsideFolder) {
+            if (!item.isFolder()) {
+                result.add(item);
+            } else {
+                result.addAll(getAllFilesRecursivelyInsideFolder(item));
+            }
+        }
+
+        return result;
+    }
 
     public List<OCFile> getFolderContent(OCFile ocFile, boolean onlyOnDevice) {
         if (ocFile != null && ocFile.isFolder() && ocFile.fileExists()) {
@@ -188,7 +233,6 @@ public class FileDataStorageManager {
             return new ArrayList<>();
         }
     }
-
 
     public List<OCFile> getFolderImages(OCFile folder, boolean onlyOnDevice) {
         List<OCFile> imageList = new ArrayList<>();
@@ -513,6 +557,7 @@ public class FileDataStorageManager {
         cv.put(ProviderTableMeta.FILE_METADATA_SIZE, gson.toJson(file.getImageDimension()));
         cv.put(ProviderTableMeta.FILE_METADATA_GPS, gson.toJson(file.getGeoLocation()));
         cv.put(ProviderTableMeta.FILE_METADATA_LIVE_PHOTO, file.getLinkedFileIdForLivePhoto());
+        cv.put(ProviderTableMeta.FILE_E2E_COUNTER, file.getE2eCounter());
 
         return cv;
     }
@@ -945,6 +990,7 @@ public class FileDataStorageManager {
         ocFile.setLockToken(fileEntity.getLockToken());
         ocFile.setLivePhoto(fileEntity.getMetadataLivePhoto());
         ocFile.setHidden(nullToZero(fileEntity.getHidden()) == 1);
+        ocFile.setE2eCounter(fileEntity.getE2eCounter());
 
         String sharees = fileEntity.getSharees();
         // Surprisingly JSON deserialization causes significant overhead.
@@ -1931,6 +1977,8 @@ public class FileDataStorageManager {
                           capability.getEndToEndEncryption().getValue());
         contentValues.put(ProviderTableMeta.CAPABILITIES_END_TO_END_ENCRYPTION_KEYS_EXIST,
                           capability.getEndToEndEncryptionKeysExist().getValue());
+        contentValues.put(ProviderTableMeta.CAPABILITIES_END_TO_END_ENCRYPTION_API_VERSION,
+                          capability.getEndToEndEncryptionApiVersion().getValue());
         contentValues.put(ProviderTableMeta.CAPABILITIES_SERVER_BACKGROUND_DEFAULT,
                           capability.getServerBackgroundDefault().getValue());
         contentValues.put(ProviderTableMeta.CAPABILITIES_SERVER_BACKGROUND_PLAIN,
@@ -1957,6 +2005,7 @@ public class FileDataStorageManager {
                           capability.getUserStatusSupportsEmoji().getValue());
         contentValues.put(ProviderTableMeta.CAPABILITIES_FILES_LOCKING_VERSION,
                           capability.getFilesLockingVersion());
+        contentValues.put(ProviderTableMeta.CAPABILITIES_ASSISTANT, capability.getAssistant().getValue());
         contentValues.put(ProviderTableMeta.CAPABILITIES_GROUPFOLDERS, capability.getGroupfolders().getValue());
         contentValues.put(ProviderTableMeta.CAPABILITIES_DROP_ACCOUNT, capability.getDropAccount().getValue());
         contentValues.put(ProviderTableMeta.CAPABILITIES_SECURITY_GUARD, capability.getSecurityGuard().getValue());
@@ -2084,6 +2133,16 @@ public class FileDataStorageManager {
                 getBoolean(cursor,
                            ProviderTableMeta.CAPABILITIES_END_TO_END_ENCRYPTION_KEYS_EXIST)
                                                      );
+
+            String e2eVersionString = getString(cursor, ProviderTableMeta.CAPABILITIES_END_TO_END_ENCRYPTION_API_VERSION);
+            E2EVersion e2EVersion;
+            if (e2eVersionString == null) {
+                e2EVersion = E2EVersion.UNKNOWN;
+            } else {
+                e2EVersion = E2EVersion.fromValue(e2eVersionString);
+            }
+            capability.setEndToEndEncryptionApiVersion(e2EVersion);
+
             capability.setServerBackgroundDefault(
                 getBoolean(cursor, ProviderTableMeta.CAPABILITIES_SERVER_BACKGROUND_DEFAULT));
             capability.setServerBackgroundPlain(getBoolean(cursor,
@@ -2115,6 +2174,7 @@ public class FileDataStorageManager {
                 getBoolean(cursor, ProviderTableMeta.CAPABILITIES_USER_STATUS_SUPPORTS_EMOJI));
             capability.setFilesLockingVersion(
                 getString(cursor, ProviderTableMeta.CAPABILITIES_FILES_LOCKING_VERSION));
+            capability.setAssistant(getBoolean(cursor, ProviderTableMeta.CAPABILITIES_ASSISTANT));
             capability.setGroupfolders(getBoolean(cursor, ProviderTableMeta.CAPABILITIES_GROUPFOLDERS));
             capability.setDropAccount(getBoolean(cursor, ProviderTableMeta.CAPABILITIES_DROP_ACCOUNT));
             capability.setSecurityGuard(getBoolean(cursor, ProviderTableMeta.CAPABILITIES_SECURITY_GUARD));

@@ -106,7 +106,7 @@ public class FileDetailActivitiesFragment extends Fragment implements
     private FileOperationsHelper operationsHelper;
     private VersionListInterface.CommentCallback callback;
 
-    private FileDetailsActivitiesFragmentBinding binding;
+    FileDetailsActivitiesFragmentBinding binding;
 
     @Inject UserAccountManager accountManager;
     @Inject ClientFactory clientFactory;
@@ -147,6 +147,7 @@ public class FileDetailActivitiesFragment extends Fragment implements
         viewThemeUtils.androidx.themeSwipeRefreshLayout(binding.swipeContainingEmpty);
         viewThemeUtils.androidx.themeSwipeRefreshLayout(binding.swipeContainingList);
 
+        isLoadingActivities = true;
         fetchAndSetData(-1);
 
         binding.swipeContainingList.setOnRefreshListener(() -> {

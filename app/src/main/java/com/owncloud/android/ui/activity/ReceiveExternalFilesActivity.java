@@ -59,6 +59,8 @@ import android.widget.Toast;
 import com.google.android.material.button.MaterialButton;
 import com.nextcloud.client.account.User;
 import com.nextcloud.client.di.Injectable;
+import com.nextcloud.client.jobs.upload.FileUploadHelper;
+import com.nextcloud.client.jobs.upload.FileUploadWorker;
 import com.nextcloud.client.preferences.AppPreferences;
 import com.nextcloud.utils.extensions.BundleExtensionsKt;
 import com.nextcloud.utils.extensions.IntentExtensionsKt;
@@ -68,7 +70,6 @@ import com.owncloud.android.databinding.ReceiveExternalFilesBinding;
 import com.owncloud.android.databinding.UploadFileDialogBinding;
 import com.owncloud.android.datamodel.OCFile;
 import com.owncloud.android.datamodel.SyncedFolderProvider;
-import com.owncloud.android.files.services.FileUploader;
 import com.owncloud.android.files.services.NameCollisionPolicy;
 import com.owncloud.android.lib.common.operations.RemoteOperation;
 import com.owncloud.android.lib.common.operations.RemoteOperationResult;
@@ -173,8 +174,6 @@ public class ReceiveExternalFilesActivity extends FileActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        prepareStreamsToUpload();
-
         if (savedInstanceState != null) {
             String parentPath = savedInstanceState.getString(KEY_PARENTS);
 
@@ -189,6 +188,8 @@ public class ReceiveExternalFilesActivity extends FileActivity
         super.onCreate(savedInstanceState);
         binding = ReceiveExternalFilesBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        prepareStreamsToUpload();
 
         // Listen for sync messages
         IntentFilter syncIntentFilter = new IntentFilter(RefreshFolderOperation.
@@ -849,16 +850,16 @@ public class ReceiveExternalFilesActivity extends FileActivity
     private void prepareStreamsToUpload() {
         Intent intent = getIntent();
 
-        if (Intent.ACTION_SEND.equals(intent.getAction())) {
+        if (intent.hasExtra(Intent.EXTRA_STREAM) && Intent.ACTION_SEND.equals(intent.getAction())) {
             mStreamsToUpload = new ArrayList<>();
             mStreamsToUpload.add(IntentExtensionsKt.getParcelableArgument(intent, Intent.EXTRA_STREAM, Parcelable.class));
-        } else if (Intent.ACTION_SEND_MULTIPLE.equals(intent.getAction())) {
+        } else if (intent.hasExtra(Intent.EXTRA_STREAM) && Intent.ACTION_SEND_MULTIPLE.equals(intent.getAction())) {
             mStreamsToUpload = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
-        }
-
-        if (mStreamsToUpload == null || mStreamsToUpload.isEmpty() || mStreamsToUpload.get(0) == null) {
+        } else if (intent.hasExtra(Intent.EXTRA_TEXT) && Intent.ACTION_SEND.equals(intent.getAction())) {
             mStreamsToUpload = null;
             saveTextsFromIntent(intent);
+        } else {
+            showErrorDialog(R.string.uploader_error_message_no_file_to_upload, R.string.uploader_error_title_file_cannot_be_uploaded);
         }
     }
 
@@ -884,17 +885,16 @@ public class ReceiveExternalFilesActivity extends FileActivity
     }
 
     public void uploadFile(String tmpName, String filename) {
-        FileUploader.uploadNewFile(
+        FileUploadHelper.Companion.instance().uploadNewFiles(
             getUser().orElseThrow(RuntimeException::new),
-            tmpName,
-            mFile.getRemotePath() + filename,
-            FileUploader.LOCAL_BEHAVIOUR_COPY,
+            new String[]{ tmpName },
+            new String[]{ mFile.getRemotePath() + filename},
+            FileUploadWorker.LOCAL_BEHAVIOUR_COPY,
             true,
             UploadFileOperation.CREATED_BY_USER,
             false,
             false,
-            NameCollisionPolicy.ASK_USER
-                                  );
+            NameCollisionPolicy.ASK_USER);
         finish();
     }
 
@@ -905,7 +905,7 @@ public class ReceiveExternalFilesActivity extends FileActivity
             mStreamsToUpload,
             mUploadPath,
             getUser().orElseThrow(RuntimeException::new),
-            FileUploader.LOCAL_BEHAVIOUR_DELETE,
+            FileUploadWorker.LOCAL_BEHAVIOUR_DELETE,
             true, // Show waiting dialog while file is being copied from private storage
             this  // Copy temp task listener
         );

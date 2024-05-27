@@ -29,6 +29,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.VisibleForTesting
 import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter
@@ -63,7 +64,7 @@ class GalleryAdapter(
     transferServiceGetter: ComponentsGetter,
     viewThemeUtils: ViewThemeUtils,
     var columns: Int,
-    val defaultThumbnailSize: Int
+    private val defaultThumbnailSize: Int
 ) : SectionedRecyclerViewAdapter<SectionedViewHolder>(), CommonOCFileListAdapterInterface, PopupTextProvider {
     var files: List<GalleryItems> = mutableListOf()
     private val ocFileListDelegate: OCFileListDelegate
@@ -73,6 +74,7 @@ class GalleryAdapter(
         storageManager = transferServiceGetter.storageManager
 
         ocFileListDelegate = OCFileListDelegate(
+            transferServiceGetter.fileUploaderHelper,
             context,
             ocFileListFragmentInterface,
             user,
@@ -129,7 +131,7 @@ class GalleryAdapter(
         return files.size
     }
 
-    override fun getPopupText(position: Int): String {
+    override fun getPopupText(p0: View, position: Int): CharSequence {
         return DisplayUtils.getDateByPattern(
             files[getRelativePosition(position).section()].date,
             context,

@@ -34,6 +34,7 @@ import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.provider.BaseColumns;
 import android.text.TextUtils;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.nextcloud.client.account.User;
@@ -105,6 +106,7 @@ public class UsersAndGroupsSearchProvider extends ContentProvider {
 
     public static final String CONTENT = "content";
 
+    private String AUTHORITY;
     private String DATA_USER;
     private String DATA_GROUP;
     private String DATA_ROOM;
@@ -116,6 +118,8 @@ public class UsersAndGroupsSearchProvider extends ContentProvider {
 
     @Inject
     protected UserAccountManager accountManager;
+    @Inject
+    protected UsersAndGroupsSearchConfig searchConfig;
 
     private static final Map<String, ShareType> sShareTypes = new HashMap<>();
 
@@ -125,7 +129,7 @@ public class UsersAndGroupsSearchProvider extends ContentProvider {
     }
 
     private static void setActionShareWith(@NonNull Context context) {
-        ACTION_SHARE_WITH = context.getResources().getString(R.string.users_and_groups_share_with);
+        ACTION_SHARE_WITH = context.getString(R.string.users_and_groups_share_with);
     }
 
     @Nullable
@@ -143,7 +147,7 @@ public class UsersAndGroupsSearchProvider extends ContentProvider {
             return false;
         }
 
-        String AUTHORITY = getContext().getResources().getString(R.string.users_and_groups_search_authority);
+        AUTHORITY = getContext().getString(R.string.users_and_groups_search_authority);
         setActionShareWith(getContext());
         DATA_USER = AUTHORITY + ".data.user";
         DATA_GROUP = AUTHORITY + ".data.group";
@@ -193,6 +197,10 @@ public class UsersAndGroupsSearchProvider extends ContentProvider {
     }
 
     private Cursor searchForUsersOrGroups(Uri uri) {
+
+        // TODO check searchConfig and filter results
+        Log.d(TAG, "searchForUsersOrGroups: searchConfig only users: " + searchConfig.getSearchOnlyUsers());
+
         String lastPathSegment = uri.getLastPathSegment();
 
         if (lastPathSegment == null) {
@@ -206,15 +214,14 @@ public class UsersAndGroupsSearchProvider extends ContentProvider {
         String userQuery = lastPathSegment.toLowerCase(Locale.ROOT);
 
         // request to the OC server about users and groups matching userQuery
-        GetShareesRemoteOperation searchRequest = new GetShareesRemoteOperation(userQuery, REQUESTED_PAGE,
+        GetShareesRemoteOperation searchRequest = new GetShareesRemoteOperation(userQuery,
+                                                                                REQUESTED_PAGE,
                                                                                 RESULTS_PER_PAGE);
-        RemoteOperationResult result = searchRequest.execute(user, getContext());
+        RemoteOperationResult<ArrayList<JSONObject>> result = searchRequest.execute(user, getContext());
         List<JSONObject> names = new ArrayList<>();
 
         if (result.isSuccess()) {
-            for (Object o : result.getData()) {
-                names.add((JSONObject) o);
-            }
+            names = result.getResultData();
         } else {
             showErrorMessage(result);
         }
@@ -272,6 +279,11 @@ public class UsersAndGroupsSearchProvider extends ContentProvider {
                         status = new Status(StatusType.OFFLINE, "", "", -1);
                     }
 
+                    if (searchConfig.getSearchOnlyUsers() && type != ShareType.USER) {
+                        // skip all types but users, as E2E secure share is only allowed to users on same server
+                        continue;
+                    }
+
                     switch (type) {
                         case GROUP:
                             displayName = userName;
@@ -300,9 +312,7 @@ public class UsersAndGroupsSearchProvider extends ContentProvider {
                             displayName = userName;
                             subline = (status.getMessage() == null || status.getMessage().isEmpty()) ? null :
                                 status.getMessage();
-                            Uri.Builder builder =
-                                Uri.parse("content://com.nextcloud.android.providers.UsersAndGroupsSearchProvider/icon")
-                                    .buildUpon();
+                            Uri.Builder builder = Uri.parse("content://" + AUTHORITY + "/icon").buildUpon();
 
                             builder.appendQueryParameter("shareWith", shareWith);
                             builder.appendQueryParameter("displayName", displayName);

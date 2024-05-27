@@ -25,20 +25,27 @@
     <group
         android:id="@+id/drawer_menu_standard"
         android:checkableBehavior="single">
+
         <item
             android:id="@+id/nav_all_files"
             android:icon="@drawable/all_files"
             android:orderInCategory="0"
-            android:title="@string/drawer_item_all_files"/>
+            android:title="@string/drawer_item_all_files" />
+
+        <item
+            android:id="@+id/nav_personal_files"
+            android:icon="@drawable/ic_user"
+            android:orderInCategory="0"
+            android:title="@string/drawer_item_personal_files" />
         <item
             android:id="@+id/nav_activity"
             android:icon="@drawable/ic_activity"
-            android:title="@string/drawer_item_activities"/>
+            android:title="@string/drawer_item_activities" />
         <item
             android:id="@+id/nav_favorites"
             android:icon="@drawable/nav_favorites"
             android:orderInCategory="0"
-            android:title="@string/drawer_item_favorites"/>
+            android:title="@string/drawer_item_favorites" />
         <item
             android:id="@+id/nav_gallery"
             android:icon="@drawable/nav_photos"
@@ -69,6 +76,13 @@
             android:id="@+id/nav_notifications"
             android:icon="@drawable/nav_notifications"
             android:title="@string/drawer_item_notifications"/>
+
+        <item
+            android:id="@+id/nav_assistant"
+            android:icon="@drawable/ic_assistant"
+            android:orderInCategory="0"
+            android:title="@string/drawer_item_assistant" />
+
         <item
             android:id="@+id/nav_uploads"
             android:icon="@drawable/uploads"
@@ -122,4 +136,17 @@
             android:orderInCategory="200"
             android:title=""/>
     </group>
+
+    <!--
+      one more dummy element required
+      After making the quota details opaque
+      it is hiding some part of the element of the drawer above it
+    -->
+    <group>
+        <item
+            android:enabled="false"
+            android:orderInCategory="200"
+            android:title=""/>
+    </group>
+
 </menu>

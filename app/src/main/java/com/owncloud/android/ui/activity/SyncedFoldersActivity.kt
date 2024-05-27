@@ -43,6 +43,7 @@ import com.nextcloud.client.di.Injectable
 import com.nextcloud.client.jobs.BackgroundJobManager
 import com.nextcloud.client.jobs.MediaFoldersDetectionWork
 import com.nextcloud.client.jobs.NotificationWork
+import com.nextcloud.client.jobs.upload.FileUploadWorker
 import com.nextcloud.client.preferences.AppPreferences
 import com.nextcloud.client.preferences.SubFolderRule
 import com.nextcloud.utils.extensions.getParcelableArgument
@@ -58,7 +59,6 @@ import com.owncloud.android.datamodel.OCFile
 import com.owncloud.android.datamodel.SyncedFolder
 import com.owncloud.android.datamodel.SyncedFolderDisplayItem
 import com.owncloud.android.datamodel.SyncedFolderProvider
-import com.owncloud.android.files.services.FileUploader
 import com.owncloud.android.files.services.NameCollisionPolicy
 import com.owncloud.android.lib.common.utils.Log_OC
 import com.owncloud.android.ui.adapter.SyncedFolderAdapter
@@ -80,7 +80,7 @@ import javax.inject.Inject
 /**
  * Activity displaying all auto-synced folders and/or instant upload media folders.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 class SyncedFoldersActivity :
     FileActivity(),
     SyncedFolderAdapter.ClickListener,
@@ -165,8 +165,8 @@ class SyncedFoldersActivity :
     @Inject
     lateinit var syncedFolderProvider: SyncedFolderProvider
 
-    private lateinit var binding: SyncedFoldersLayoutBinding
-    private lateinit var adapter: SyncedFolderAdapter
+    lateinit var binding: SyncedFoldersLayoutBinding
+    lateinit var adapter: SyncedFolderAdapter
 
     private var syncedFolderPreferencesDialogFragment: SyncedFolderPreferencesDialogFragment? = null
     private var path: String? = null
@@ -403,7 +403,8 @@ class SyncedFoldersActivity :
             files.size.toLong(),
             syncedFolder.type,
             syncedFolder.isHidden,
-            syncedFolder.subfolderRule
+            syncedFolder.subfolderRule,
+            syncedFolder.isExcludeHidden
         )
     }
 
@@ -433,7 +434,8 @@ class SyncedFoldersActivity :
             mediaFolder.numberOfFiles,
             mediaFolder.type,
             syncedFolder.isHidden,
-            syncedFolder.subfolderRule
+            syncedFolder.subfolderRule,
+            syncedFolder.isExcludeHidden
         )
     }
 
@@ -453,7 +455,7 @@ class SyncedFoldersActivity :
             true,
             false,
             account.name,
-            FileUploader.LOCAL_BEHAVIOUR_FORGET,
+            FileUploadWorker.LOCAL_BEHAVIOUR_FORGET,
             NameCollisionPolicy.ASK_USER.serialize(),
             false,
             clock.currentTime,
@@ -462,7 +464,8 @@ class SyncedFoldersActivity :
             mediaFolder.numberOfFiles,
             mediaFolder.type,
             false,
-            SubFolderRule.YEAR_MONTH
+            SubFolderRule.YEAR_MONTH,
+            false
         )
     }
 
@@ -547,14 +550,15 @@ class SyncedFoldersActivity :
                         true,
                         false,
                         account.name,
-                        FileUploader.LOCAL_BEHAVIOUR_FORGET,
+                        FileUploadWorker.LOCAL_BEHAVIOUR_FORGET,
                         NameCollisionPolicy.ASK_USER.serialize(),
                         false,
                         clock.currentTime,
                         null,
                         MediaFolderType.CUSTOM,
                         false,
-                        SubFolderRule.YEAR_MONTH
+                        SubFolderRule.YEAR_MONTH,
+                        false
                     )
                     onSyncFolderSettingsClick(0, emptyCustomFolder)
                 } else {
@@ -670,7 +674,8 @@ class SyncedFoldersActivity :
                 File(syncedFolder.localPath).name,
                 syncedFolder.type,
                 syncedFolder.isHidden,
-                syncedFolder.subFolderRule
+                syncedFolder.subFolderRule,
+                syncedFolder.isExcludeHidden
             )
             saveOrUpdateSyncedFolder(newCustomFolder)
             adapter.addSyncFolderItem(newCustomFolder)
@@ -688,7 +693,8 @@ class SyncedFoldersActivity :
                 syncedFolder.uploadAction,
                 syncedFolder.nameCollisionPolicy.serialize(),
                 syncedFolder.isEnabled,
-                syncedFolder.subFolderRule
+                syncedFolder.subFolderRule,
+                syncedFolder.isExcludeHidden
             )
             saveOrUpdateSyncedFolder(item)
 
@@ -759,6 +765,7 @@ class SyncedFoldersActivity :
      * @param uploadAction    upload action
      * @param nameCollisionPolicy what to do on name collision
      * @param enabled         is sync enabled
+     * @param excludeHidden   exclude hidden file or folder, for {@link MediaFolderType#CUSTOM} only
      */
     @Suppress("LongParameterList")
     private fun updateSyncedFolderItem(
@@ -773,7 +780,8 @@ class SyncedFoldersActivity :
         uploadAction: Int,
         nameCollisionPolicy: Int,
         enabled: Boolean,
-        subFolderRule: SubFolderRule
+        subFolderRule: SubFolderRule,
+        excludeHidden: Boolean
     ) {
         item.id = id
         item.localPath = localPath
@@ -786,6 +794,7 @@ class SyncedFoldersActivity :
         item.setNameCollisionPolicy(nameCollisionPolicy)
         item.setEnabled(enabled, clock.currentTime)
         item.setSubFolderRule(subFolderRule)
+        item.setExcludeHidden(excludeHidden)
     }
 
     override fun onRequestPermissionsResult(

@@ -21,6 +21,7 @@ import com.nextcloud.client.account.UserAccountManager;
 import com.nextcloud.client.account.UserAccountManagerImpl;
 import com.nextcloud.client.device.BatteryStatus;
 import com.nextcloud.client.device.PowerManagementService;
+import com.nextcloud.client.jobs.upload.FileUploadWorker;
 import com.nextcloud.client.network.Connectivity;
 import com.nextcloud.client.network.ConnectivityService;
 import com.nextcloud.client.preferences.AppPreferencesImpl;
@@ -28,16 +29,19 @@ import com.nextcloud.client.preferences.DarkMode;
 import com.nextcloud.common.NextcloudClient;
 import com.nextcloud.java.util.Optional;
 import com.nextcloud.test.GrantStoragePermissionRule;
+import com.nextcloud.test.RandomStringGenerator;
+import com.owncloud.android.datamodel.ArbitraryDataProvider;
+import com.owncloud.android.datamodel.ArbitraryDataProviderImpl;
 import com.owncloud.android.datamodel.FileDataStorageManager;
 import com.owncloud.android.datamodel.OCFile;
 import com.owncloud.android.datamodel.UploadsStorageManager;
 import com.owncloud.android.db.OCUpload;
-import com.owncloud.android.files.services.FileUploader;
 import com.owncloud.android.files.services.NameCollisionPolicy;
 import com.owncloud.android.lib.common.OwnCloudClient;
 import com.owncloud.android.lib.common.OwnCloudClientFactory;
 import com.owncloud.android.lib.common.accounts.AccountUtils;
 import com.owncloud.android.lib.common.operations.RemoteOperationResult;
+import com.owncloud.android.lib.resources.files.ExistenceCheckRemoteOperation;
 import com.owncloud.android.lib.resources.status.CapabilityBooleanType;
 import com.owncloud.android.lib.resources.status.GetCapabilitiesRemoteOperation;
 import com.owncloud.android.lib.resources.status.OCCapability;
@@ -45,8 +49,6 @@ import com.owncloud.android.lib.resources.status.OwnCloudVersion;
 import com.owncloud.android.operations.CreateFolderOperation;
 import com.owncloud.android.operations.UploadFileOperation;
 import com.owncloud.android.utils.FileStorageUtils;
-
-import junit.framework.TestCase;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -100,6 +102,8 @@ public abstract class AbstractIT {
     protected FileDataStorageManager fileDataStorageManager =
         new FileDataStorageManager(user, targetContext.getContentResolver());
 
+    protected ArbitraryDataProvider arbitraryDataProvider = new ArbitraryDataProviderImpl(targetContext);
+
     @BeforeClass
     public static void beforeAll() {
         try {
@@ -118,14 +122,11 @@ public abstract class AbstractIT {
 
             client = OwnCloudClientFactory.createOwnCloudClient(account, targetContext);
             nextcloudClient = OwnCloudClientFactory.createNextcloudClient(user, targetContext);
-        } catch (OperationCanceledException e) {
-            e.printStackTrace();
-        } catch (AuthenticatorException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (AccountUtils.AccountNotFoundException e) {
-            e.printStackTrace();
+        } catch (OperationCanceledException |
+                 IOException |
+                 AccountUtils.AccountNotFoundException |
+                 AuthenticatorException e) {
+            throw new RuntimeException("Error setting up clients", e);
         }
 
         Bundle arguments = androidx.test.platform.app.InstrumentationRegistry.getArguments();
@@ -194,13 +195,18 @@ public abstract class AbstractIT {
     }
 
     protected void testOnlyOnServer(OwnCloudVersion version) throws AccountUtils.AccountNotFoundException {
+        OCCapability ocCapability = getCapability();
+        assumeTrue(ocCapability.getVersion().isNewerOrEqual(version));
+    }
+
+    protected OCCapability getCapability() throws AccountUtils.AccountNotFoundException {
         NextcloudClient client = OwnCloudClientFactory.createNextcloudClient(user, targetContext);
 
         OCCapability ocCapability = (OCCapability) new GetCapabilitiesRemoteOperation()
             .execute(client)
             .getSingleData();
 
-        assumeTrue(ocCapability.getVersion().isNewerOrEqual(version));
+        return ocCapability;
     }
 
     @Before
@@ -333,12 +339,24 @@ public abstract class AbstractIT {
         }
     }
 
-    public OCFile createFolder(String remotePath) {
-        TestCase.assertTrue(new CreateFolderOperation(remotePath, user, targetContext, getStorageManager())
-                                .execute(client)
-                                .isSuccess());
+    protected void sleep(int second) {
+        try {
+            Thread.sleep(1000L * second);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 
-        return getStorageManager().getFileByDecryptedRemotePath(remotePath);
+    public OCFile createFolder(String remotePath) {
+        RemoteOperationResult check = new ExistenceCheckRemoteOperation(remotePath, false).execute(client);
+
+        if (!check.isSuccess()) {
+            assertTrue(new CreateFolderOperation(remotePath, user, targetContext, getStorageManager())
+                           .execute(client)
+                           .isSuccess());
+        }
+
+        return getStorageManager().getFileByDecryptedRemotePath(remotePath.endsWith("/") ? remotePath : remotePath + "/");
     }
 
     public void uploadFile(File file, String remotePath) {
@@ -395,7 +413,7 @@ public abstract class AbstractIT {
             null,
             ocUpload,
             NameCollisionPolicy.DEFAULT,
-            FileUploader.LOCAL_BEHAVIOUR_COPY,
+            FileUploadWorker.LOCAL_BEHAVIOUR_COPY,
             targetContext,
             false,
             false,
@@ -471,6 +489,14 @@ public abstract class AbstractIT {
 
     public static String getUserId(User user) {
         return AccountManager.get(targetContext).getUserData(user.toPlatformAccount(), KEY_USER_ID);
+    }
+
+    public String getRandomName() {
+        return getRandomName(5);
+    }
+
+    public String getRandomName(int length) {
+        return RandomStringGenerator.make(length);
     }
 
     protected static User getUser(Account account) {

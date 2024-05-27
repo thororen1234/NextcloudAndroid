@@ -89,7 +89,7 @@ class TrashbinActivityIT : AbstractIT() {
         shortSleep()
         waitForIdleSync()
 
-        screenshot(sut)
+        screenshot(sut.binding.emptyList.emptyListView)
     }
 
     @Test
@@ -105,10 +105,11 @@ class TrashbinActivityIT : AbstractIT() {
 
         shortSleep()
 
-        screenshot(sut)
+        screenshot(sut.binding.listFragmentLayout)
     }
 
     @Test
+    @ScreenshotTest
     fun normalUser() {
         val sut: TrashbinActivity = activityRule.launchActivity(null)
 
@@ -124,6 +125,7 @@ class TrashbinActivityIT : AbstractIT() {
     }
 
     @Test
+    @ScreenshotTest
     fun differentUser() {
         val temp = Account("differentUser@https://nextcloud.localhost", MainApp.getAccountType(targetContext))
 
